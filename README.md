@@ -97,7 +97,7 @@ Valid neighborhood codes: Blmngtn, Blueste, BrDale, BrkSide, ClearCr, CollgCr, C
 
 ### Example request
 
-POST request to /predict with the following JSON body:
+Now we provide a POST request to /predict with the JSON body so you only have to copy and paste to get the prediction:
 
 ```json
 {
@@ -129,9 +129,7 @@ Response:
 
 Next steps:
 
-- Stricter input validation (value ranges and valid neighborhoods) and response schemas
 - Automated tests with pytest
 - Docker containerization
 - Cloud deployment
 - CI pipeline with GitHub Actions
-- k-fold cross-validation for a more robust model comparison
