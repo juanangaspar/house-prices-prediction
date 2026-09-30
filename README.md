@@ -1,56 +1,137 @@
-# House price prediction
+# House Price Prediction API
 
-Data analysis and machine learning project focused on predicting house prices using Python.
+End-to-end machine learning project to predict house prices: from exploratory data analysis and model selection to a REST API that serves predictions.
 
-## Project goal
+## Project overview
 
-The goal of this project is to build a machine learning model capable of predicting the sale price of a house based on its features.
-
-The project follows a data science workflow: data loading, cleaning, exploratory analysis, feature preparation, model training, evaluation and interpretation of feature importance.
-
-## Dataset
-
-The project uses a house prices dataset taken from Kaggle, with numerical and categorical variables related to the characteristics of the properties.
-
-## Technologies used
-
-- Python
-- pandas
-- NumPy
-- matplotlib
-- scikit-learn
-- Jupyter Notebook
-
-## Project timeline
-
-1. Data loading and initial exploration.
-2. Data cleaning and preparation.
-3. Exploratory data analysis.
-4. Modeling.
-5. Feature importance analysis.
-6. Conclusions.
-
-## Models used
-
-- Linear regression
-- Random Forest Regressor
+- **Exploratory analysis and modeling** (notebooks folder): data cleaning, missing value treatment, and comparison between a linear regression and a Random Forest Regressor.
+- **Feature selection for deployment**: the final model uses 11 variables instead of the 79 available. Variables were selected based on their importance in the Random Forest, avoiding highly correlated (redundant) variables and prioritizing data that a user can easily provide. The reduced model achieves performance similar to the full model (see the notebook for the full comparison).
+- **Training script** (src/train.py): builds a scikit-learn Pipeline that combines preprocessing (one-hot encoding of the neighborhood) and the model, trains it, evaluates it and saves it to the models folder. Packaging preprocessing and model together guarantees that new data is transformed exactly as during training.
+- **REST API** (src/api.py): built with FastAPI. It loads the trained pipeline and serves predictions through a /predict endpoint, with automatic input validation.
 
 ## Results
 
-A linear regression model was first used as a baseline model. This model showed many limitations, especially for high-priced houses and in the presence of large errors.
+Performance of the deployed model (Random Forest with 11 variables) on the test set (20% of the data):
 
-A Random Forest Regressor model was then trained, which obtained better results, reducing large errors and improving the R² value. In addition, this model made it possible to analyze the importance of the variables to better understand which features have the greatest influence on the price prediction.
+| Metric | Value |
+|---|---|
+| MAE | ~18,550 $ |
+| RMSE | ~32,860 $ |
+| R² | 0.844 |
 
-## Conclusions
+## Project structure
 
-The Random Forest model showed better performance than linear regression for this regression problem.
+```
+house-prices-prediction/
+├── data/
+│   └── train.csv              # Training data
+├── notebooks/
+│   └── house_price_prediction.ipynb   # EDA, modeling and feature selection
+├── src/
+│   ├── train.py               # Trains and saves the model pipeline
+│   └── api.py                 # FastAPI application
+├── models/                    # Trained model (generated, not versioned)
+├── requirements.txt
+└── README.md
+```
 
-The project demonstrates a complete initial machine learning workflow, including data cleaning, exploratory analysis, model comparison and interpretation of results.
+## How to run locally
 
-## Possible future improvements
+Requirements: Python 3.12 or newer.
 
-- Apply cross-validation.
-- Optimize hyperparameters.
-- Handle outliers in more detail.
-- Try more advanced models such as Gradient Boosting or XGBoost.
-- Improve feature engineering.
+```bash
+# 1. Clone the repository
+git clone https://github.com/juanangaspar/house-prices-prediction.git
+cd house-prices-prediction
+
+# 2. Create and activate a virtual environment
+python -m venv .venv
+.venv\Scripts\activate          # Windows
+# source .venv/bin/activate     # Linux / macOS
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Train the model (creates models/model.joblib)
+python src/train.py
+
+# 5. Start the API
+uvicorn src.api:app --reload
+```
+
+Once the server is running, open **http://127.0.0.1:8000/docs** in your browser. This interactive documentation page lets you try every endpoint without writing any code.
+
+## Using the API
+
+### Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | / | Welcome message |
+| GET | /health | Health check, returns a status "ok" |
+| POST | /predict | Returns the predicted price of a house |
+
+### About the data and units
+
+The model was trained with the [House Prices - Advanced Regression Techniques](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques) dataset from Kaggle, which contains residential sales in **Ames, Iowa (USA)** between 2006 and 2010.
+
+Since the data comes from the United States, **all areas are expressed in square feet** (1 ft² ≈ 0.093 m²) and **prices in US dollars**. Entering values in square meters will produce wrong predictions.
+
+### Input fields
+
+| Field | Description | Unit / range |
+|---|---|---|
+| OverallQual | Overall quality of materials and finish | 1 (very poor) to 10 (excellent) |
+| GrLivArea | Above-ground living area | ft² |
+| TotalBsmtSF | Total basement area | ft² |
+| GarageArea | Garage area | ft² |
+| OverallCond | Overall condition of the house | 1 (very poor) to 10 (excellent) |
+| LotArea | Lot size | ft² |
+| YearBuilt | Year of construction | year |
+| YearRemodAdd | Year of the last remodel (same as YearBuilt if never remodeled) | year |
+| FullBath | Full bathrooms above ground | count |
+| OpenPorchSF | Open porch area | ft² |
+| Neighborhood | Neighborhood code within Ames | see list below |
+
+Valid neighborhood codes: Blmngtn, Blueste, BrDale, BrkSide, ClearCr, CollgCr, Crawfor, Edwards, Gilbert, IDOTRR, MeadowV, Mitchel, NAmes, NPkVill, NWAmes, NoRidge, NridgHt, OldTown, SWISU, Sawyer, SawyerW, Somerst, StoneBr, Timber, Veenker. The full description of every variable is available in the data_description.txt file provided by Kaggle.
+
+### Example request
+
+POST request to /predict with the following JSON body:
+
+```json
+{
+  "OverallQual": 7,
+  "GrLivArea": 1700,
+  "TotalBsmtSF": 1000,
+  "GarageArea": 480,
+  "OverallCond": 5,
+  "LotArea": 9000,
+  "YearBuilt": 2000,
+  "YearRemodAdd": 2005,
+  "FullBath": 2,
+  "OpenPorchSF": 40,
+  "Neighborhood": "CollgCr"
+}
+```
+
+Response:
+
+```json
+{
+  "predicted_price": 189013.6
+}
+```
+
+## Project status
+
+**This project is a work in progress.** The model and the API are fully functional locally. The final goal is to package the application in a **Docker** container and **deploy it to the cloud**, so that the API is publicly accessible.
+
+Next steps:
+
+- Stricter input validation (value ranges and valid neighborhoods) and response schemas
+- Automated tests with pytest
+- Docker containerization
+- Cloud deployment
+- CI pipeline with GitHub Actions
+- k-fold cross-validation for a more robust model comparison
